@@ -56,5 +56,29 @@ def add_binary_col(df):
     df['label'] = df['diagnostic_superclass'].apply(make_binary_label)
     return df
 
-def plot_ecg(signal,meta):
-    return 
+def plot_ecg(signal,meta,title = None):
+    '''Nees ECG data already to be read and seperated into signal and metadata to allow for correct plotting
+    Shows each lead one by one in a compisite plot'''
+    fs = meta['fs']
+    lead_name = meta['sig_name']
+    t = np.arange(signal.shape[0]) / fs
+    
+    fig,axes = plt.subplots(
+        nrows = 12,
+        ncols = 1,
+        figsize = (12,15),
+        sharex = True
+    )
+    
+    for lead_idx,ax in enumerate(axes):
+        ax.plot(t,signal[:,lead_idx])
+        ax.set_ylabel(lead_name[lead_idx],rotation = 0)
+        ax.grid(True, alpha = 0.25)
+        
+    axes[-1].set_xlabel("Time (s)")
+
+    if title is not None:
+        fig.suptitle(title, y=1.02)
+
+    plt.tight_layout()
+    plt.show()
