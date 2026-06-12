@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn 
 
 class simpleECGNN(nn.Module):
-    def __init__(self):
-        super.__init__()
+    def __init__(self,dropout = 0.3):
+        super().__init__()
         
         self.features = nn.Sequential(
             nn.Conv1d(12,32,kernel_size= 7, padding=3),
@@ -24,7 +24,10 @@ class simpleECGNN(nn.Module):
 
         )
         
-        self.classifier = nn.Linear(128,1)
+        self.classifier = nn.Sequential(
+            nn.Dropout(dropout),
+            nn.Linear(128,1)
+            )
         
     def forward(self, x):
         x = self.features(x)
@@ -33,3 +36,4 @@ class simpleECGNN(nn.Module):
         x = x.squeeze(1)
         return x
         
+    

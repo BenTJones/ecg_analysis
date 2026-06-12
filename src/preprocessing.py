@@ -2,6 +2,7 @@ from src.data_extraction import load_ecg
 
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
+import os
 
 def to_channels_first(signal):
     '''Signal read in the wrong shape for Torch as a tensor, so need to be flipped'''
@@ -42,3 +43,24 @@ def load_and_preprocess(id,df,path,sampling_rate=500,use_filter = True, low=0.5,
     
     return signal,meta,row
 
+def preprocess_and_cache(df,data_path = 'data/', sampling_rate = 500, use_filt = True,low = 0.5, high = 40):
+    SAVE_DIR = "data/preprocessed_500"
+    os.makedirs(SAVE_DIR, exist_ok=True)
+    for i,ecg_id in enumerate(df.index):
+        save_path = os.path.join(SAVE_DIR,f'{ecg_id}.npy')
+        
+        if os.path.exists(save_path):
+            continue
+        
+        signal,meta,row = load_and_preprocess(
+            ecg_id, 
+            df,
+            data_path,
+            sampling_rate,
+            use_filt,
+            low,
+            high
+        )
+        
+        signal = signal.astype(np.float32)
+        np.save(save_path, signal)
