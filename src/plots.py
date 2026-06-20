@@ -28,4 +28,3 @@ def val_metrics(history,save_path = 'results/plots/val_metrics.png'):
 def plot_ecg_by_id(ecg_id,df,path = 'data/'):
     signal,meta,row = load_ecg(ecg_id,df,path)
     plot_ecg(signal,meta,title = f"ECG ID: {ecg_id}")
-    
