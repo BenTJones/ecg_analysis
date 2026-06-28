@@ -52,13 +52,13 @@ def plot_saliency_for_lead(
         signal[lead_idx],
         c=sal,
         s=5,
-        alpha=0.8,
+        alpha=0.75,
     )
 
     plt.colorbar(points, label="Saliency")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Normalised amplitude")
-    plt.title(f"Saliency map | ECG ID {ecg_id} | Lead {lead_name} | True label: {int(y.item())}")
+    plt.xlabel("Time(s)")
+    plt.ylabel("Amplitude")
+    plt.title(f"Saliency map - ECG ID {ecg_id} - Lead {lead_name} - True label: {int(y.item())}")
     plt.legend()
     plt.tight_layout()
     
