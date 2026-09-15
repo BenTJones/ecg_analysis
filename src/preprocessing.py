@@ -26,6 +26,13 @@ def bylead_normalisation(signal):
     normalised = (signal - mean) / (std + epsilon)
     return normalised.astype(np.float32)
 
+def preprocess_signal(signal, fs, use_filter=True, low=0.5, high=40):
+    signal = to_channels_first(signal)
+    if use_filter:
+        signal = bandpass_filter(signal, fs, low, high)
+    signal = bylead_normalisation(signal)
+    return signal
+
 def load_and_preprocess(id,df,path,sampling_rate=500,use_filter = True, low=0.5,high=40):
     signal,meta,row = load_ecg(
         id,
@@ -33,14 +40,9 @@ def load_and_preprocess(id,df,path,sampling_rate=500,use_filter = True, low=0.5,
         path,
         sampling_rate
     )
-    signal = to_channels_first(signal)
     fs = meta['fs']
-    
-    if use_filter:
-        signal = bandpass_filter(signal,fs,low,high)
-    
-    signal = bylead_normalisation(signal)
-    
+    signal = preprocess_signal(signal, fs, use_filter=use_filter, low=low, high=high)
+
     return signal,meta,row
 
 def preprocess_and_cache(df,data_path = 'data/', sampling_rate = 500, use_filt = True,low = 0.5, high = 40):
