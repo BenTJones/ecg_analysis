@@ -8,7 +8,7 @@ from src.preprocessing import preprocess_signal
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODEL_PATH = PROJECT_ROOT / "results/models/best_simple_cnn.pt"
-THRESHOLD = 0.5
+THRESHOLD = 0.3773
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

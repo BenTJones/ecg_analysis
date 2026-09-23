@@ -1,4 +1,4 @@
-# ECG Risk Stratification — Test Set Evaluation Report
+# ECG ST/T Change Classification — Test Set Evaluation Report
 
 **Project:** ecg-risk-stratification  
 **Model:** `simpleECGNN` (1D CNN)  
@@ -8,115 +8,141 @@
 
 ---
 
-## Executive summary
+## Executive Summary
 
-A 1D convolutional neural network was trained on PTB-XL folds 1–8, tuned on fold 9, and evaluated on held-out fold 10 (1,433 ECGs, zero patient leakage). The model achieves **AUROC 0.974**, **AUPRC 0.964**, and **F1 0.893** at the validation-tuned decision threshold of **0.377**. Performance generalises well from validation to test with minimal drop across all metrics.
+A 1D convolutional neural network was trained to distinguish pure normal ECGs from ECGs containing the PTB-XL ST/T change (STTC) diagnostic superclass. Records belonging only to other diagnostic superclasses were excluded from the binary classification task.
 
-Gradient-based saliency maps (Captum) were generated for the highest-confidence **false positive** (ECG 1158) and lowest-confidence **false negative** (ECG 11132) to inspect which waveform regions drive model errors.
+The model was trained on PTB-XL folds 1–8, tuned on fold 9, and evaluated on held-out fold 10 (1,433 ECGs, zero patient leakage). It achieved **AUROC 0.974**, **AUPRC 0.964**, and **F1 0.893** at the validation-selected decision threshold of **0.377**. Performance remained close between validation and the held-out test set across the main evaluation metrics.
+
+Gradient-based saliency maps using Captum were generated for the **highest-STTC-probability false positive** (ECG 1158) and **lowest-STTC-probability false negative** (ECG 11132) to examine which waveform regions had high local influence on the model output.
 
 ---
 
-## 1. Task and data
+## 1. Task and Data
 
-### Classification task
+### Classification Task
 
-| Label | Meaning | Source |
-|-------|---------|--------|
-| 0 | Normal ECG | PTB-XL diagnostic superclass `[NORM]` |
-| 1 | Abnormal ECG | Any non-normal superclass |
+| Label | Meaning | Inclusion rule |
+|---|---|---|
+| 0 | Pure normal ECG | Diagnostic superclass is exactly `NORM` |
+| 1 | ST/T change ECG | Diagnostic superclasses contain `STTC` |
+| Excluded | Other diagnoses | Neither pure `NORM` nor STTC-positive |
 
-### Data splits (stratified by `strat_fold`)
+STTC-positive records may contain additional diagnostic superclasses; any record containing `STTC` is assigned to the positive class. Records containing other diagnostic superclasses without `STTC` are excluded from the binary dataset.
 
-| Split | Fold(s) | Records | Normal (0) | Abnormal (1) |
-|-------|---------|---------|------------|--------------|
+### Data Splits
+
+The dataset was divided using the predefined PTB-XL `strat_fold` assignments.
+
+| Split | Fold(s) | Records | Normal (0) | STTC (1) |
+|---|---:|---:|---:|---:|
 | Train | 1–8 | 11,429 | 63.37% | 36.63% |
 | Validation | 9 | 1,442 | 63.38% | 36.62% |
 | **Test** | **10** | **1,433** | **912 (63.64%)** | **521 (36.36%)** |
 
 **Leakage check:** 0 overlapping patients between train/validation, train/test, and validation/test.
 
-### Input preprocessing
+### Input Preprocessing
 
-- 12-lead ECG, 5,000 samples at 500 Hz (10 seconds)
-- Bandpass filtering and per-lead z-score normalisation
-- Preprocessed signals cached in `data/preprocessed_500/`
+- 12-lead ECG
+- 5,000 samples per lead at 500 Hz
+- 10-second recordings
+- channels-first conversion for PyTorch
+- 0.5–40 Hz band-pass filtering
+- per-lead z-score normalisation
+- preprocessed signals cached in `data/preprocessed_500/`
 
 ---
 
-## 2. Model and training
+## 2. Model and Training
 
 ### Architecture (`src/model.py`)
 
 - **Input:** `(batch, 12, 5000)`
-- **Feature extractor:** 3× Conv1d blocks (12→32→64→128, kernel 7, BatchNorm, ReLU, MaxPool) + AdaptiveAvgPool1d
-- **Classifier:** Dropout (0.3) + Linear(128 → 1)
-- **Output:** Single logit (binary classification)
+- **Feature extractor:** 3 × Conv1d blocks
+- **Channel progression:** `12 → 32 → 64 → 128`
+- **Kernel size:** 7
+- **Each convolutional block:** BatchNorm → ReLU → MaxPool
+- **Pooling:** AdaptiveAvgPool1d
+- **Classifier:** Dropout (`0.3`) + Linear (`128 → 1`)
+- **Output:** single logit for binary classification
 
-### Training configuration
+### Training Configuration
 
 | Parameter | Value |
-|-----------|-------|
+|---|---|
 | Loss | `BCEWithLogitsLoss` with `pos_weight = 1.73` |
-| Optimiser | Adam, lr = 1e-3, weight decay = 1e-5 |
+| Optimiser | Adam |
+| Learning rate | `1e-3` |
+| Weight decay | `1e-5` |
 | Batch size | 64 |
-| Max epochs | 30 |
-| Early stopping patience | 30 (on validation AUROC) |
+| Maximum epochs | 30 |
+| Early stopping patience | 30 epochs based on validation AUROC |
 | Checkpoint criterion | Best validation AUROC |
-| Best epoch | 23 (of 30) |
+| Best epoch | 23 of 30 |
 | Best validation AUROC | 0.9792 |
 | Saved weights | `results/models/best_simple_cnn.pt` |
 
 ---
 
-## 3. Decision threshold
+## 3. Decision Threshold
 
-The default 0.5 threshold was not used. The operating point was chosen on the **validation set** by maximising F1 over the precision–recall curve:
+The default classification threshold of 0.5 was not used for the final operating point.
+
+Instead, the threshold was selected on the **validation set** by maximising F1 over the precision–recall curve.
 
 | Parameter | Value |
-|-----------|-------|
+|---|---:|
 | **Selected threshold** | **0.3773** |
-| Validation F1 at this threshold | 0.904 |
+| Validation F1 | 0.904 |
 | Validation precision | 0.873 |
 | Validation recall | 0.938 |
 
-The lower threshold prioritises sensitivity (detecting abnormal ECGs) over specificity, which is appropriate for a risk-stratification screening task.
+The lower threshold increases sensitivity for detecting STTC-positive ECGs, reducing the number of STTC cases classified as normal at the cost of additional false-positive classifications.
 
 ---
 
-## 4. Test set results (threshold = 0.377)
+## 4. Test Set Results
 
-Primary metrics saved to `results/metrics/test_metrics.csv`.
+**Operating threshold: 0.377**
 
-| Metric | Test | Validation | Δ (test − val) |
-|--------|------|------------|----------------|
+Primary metrics are saved to:
+
+`results/metrics/test_metrics.csv`
+
+### Validation vs Test Performance
+
+| Metric | Test | Validation | Δ (test − validation) |
+|---|---:|---:|---:|
 | Loss | 0.2714 | 0.2432 | +0.028 |
 | **Accuracy** | **92.04%** | 92.72% | −0.68 pp |
 | **AUROC** | **0.9742** | 0.9792 | −0.005 |
 | **AUPRC** | **0.9635** | 0.9654 | −0.002 |
 | **F1** | **0.8925** | 0.9041 | −0.012 |
 
-### Confusion matrix
+### Confusion Matrix
 
-```
+```text
                       Predicted
-                   Normal    Abnormal
-Actual  Normal      846 (TN)    66 (FP)
-        Abnormal     48 (FN)   473 (TP)
+                   Normal     STTC
+
+Actual Normal       846        66
+       STTC          48       473
 ```
 
 | Outcome | Count | Rate |
-|---------|-------|------|
+|---|---:|---:|
 | True negatives (TN) | 846 | 92.8% of normals |
-| True positives (TP) | 473 | 90.8% of abnormals |
+| True positives (TP) | 473 | 90.8% of STTCs |
 | False positives (FP) | 66 | 7.2% of normals |
-| False negatives (FN) | 48 | 9.2% of abnormals |
+| False negatives (FN) | 48 | 9.2% of STTCs |
 | **Correct** | **1,319 / 1,433** | **92.0%** |
 | **Errors** | **114 / 1,433** | **8.0%** |
 
-### Derived metrics (threshold = 0.377)
+### Derived Metrics
 
 | Metric | Value |
-|--------|-------|
+|---|---:|
 | Precision | 87.76% |
 | Recall (sensitivity) | 90.79% |
 | Specificity | 92.76% |
@@ -124,47 +150,53 @@ Actual  Normal      846 (TN)    66 (FP)
 | False positive rate | 7.24% |
 | False negative rate | 9.21% |
 | Balanced accuracy | 91.78% |
-| Disease prevalence | 36.36% |
+| STTC prevalence | 36.36% |
 
 ---
 
-## 5. Threshold comparison (0.377 vs 0.5)
+## 5. Threshold Comparison: 0.377 vs 0.5
 
-Because the threshold was tuned on validation, both operating points were checked on test:
+Because the final threshold was selected using validation data, both operating points were also examined on the held-out test set.
 
 | Metric | Threshold 0.377 (used) | Threshold 0.5 |
-|--------|------------------------|---------------|
+|---|---:|---:|
 | Accuracy | 92.04% | **92.60%** |
 | F1 | 0.8925 | **0.8971** |
 | False positives | 66 | **47** |
 | False negatives | **48** | 59 |
-| Confusion matrix | [[846, 66], [48, 473]] | [[865, 47], [59, 462]] |
+| Confusion matrix | `[[846, 66], [48, 473]]` | `[[865, 47], [59, 462]]` |
 
-On test, threshold 0.5 gives marginally higher accuracy and F1 with fewer false positives but **11 additional missed abnormal cases**. The validation-tuned threshold of 0.377 is the better choice when missing abnormal ECGs is costlier than over-calling normals.
+On the test set, the 0.5 threshold produced marginally higher accuracy and F1 and fewer false positives, but resulted in **11 additional missed STTC-positive ECGs**.
+
+The final threshold remains `0.3773` because it was selected using validation data rather than optimised retrospectively on the held-out test set. It also provides a more sensitivity-focused operating point.
 
 ---
 
-## 6. Predicted probability distribution (test set)
+## 6. Predicted Probability Distribution
 
-| Statistic | All records | Normal (label 0) | Abnormal (label 1) |
-|-----------|-------------|------------------|---------------------|
+### Test Set
+
+| Statistic | All records | Normal (label 0) | STTC (label 1) |
+|---|---:|---:|---:|
 | Minimum | 0.00065 | — | — |
 | Median | 0.082 | 0.015 | 0.975 |
 | Mean | 0.363 | 0.087 | 0.846 |
 | Maximum | 0.99997 | — | — |
 
-Normal and abnormal classes are well separated in probability space, consistent with the high AUROC of 0.974.
+Normal and STTC-positive records show substantial separation in predicted probability, consistent with the test AUROC of 0.974.
 
 ---
 
-## 7. Error analysis
+## 7. Error Analysis
 
-### False positives (n = 66)
+### False Positives
 
-Normal ECGs incorrectly classified as abnormal.
+**n = 66**
 
-| ECG ID | Predicted probability | True label |
-|--------|----------------------|------------|
+These are normal ECGs incorrectly classified as STTC-positive.
+
+| ECG ID | STTC probability | True label |
+|---:|---:|---:|
 | 1158 | 0.981 | 0 |
 | 4951 | 0.963 | 0 |
 | 245 | 0.955 | 0 |
@@ -176,12 +208,14 @@ Normal ECGs incorrectly classified as abnormal.
 | 795 | 0.830 | 0 |
 | 17935 | 0.825 | 0 |
 
-### False negatives (n = 48)
+### False Negatives
 
-Abnormal ECGs missed by the model.
+**n = 48**
 
-| ECG ID | Predicted probability | True label |
-|--------|----------------------|------------|
+These are STTC-positive ECGs incorrectly classified as normal.
+
+| ECG ID | STTC probability | True label |
+|---:|---:|---:|
 | 11132 | 0.004 | 1 |
 | 17648 | 0.016 | 1 |
 | 8834 | 0.017 | 1 |
@@ -193,35 +227,38 @@ Abnormal ECGs missed by the model.
 | 6270 | 0.041 | 1 |
 | 15864 | 0.044 | 1 |
 
-### Error summary
+### Error Summary
 
 | Error type | Count | Rate within true class |
-|------------|-------|------------------------|
+|---|---:|---:|
 | False positives | 66 | 7.2% of 912 normals |
-| False negatives | 48 | 9.2% of 521 abnormals |
+| False negatives | 48 | 9.2% of 521 STTCs |
 
-The model is slightly more likely to miss an abnormal case than to over-call a normal one at the chosen threshold.
+At the selected threshold, the false-negative rate within the STTC class is 9.2%, while the false-positive rate within the normal class is 7.2%.
 
 ---
 
-## 8. Saliency map analysis
+## 8. Saliency Map Analysis
 
 ### Method (`src/saliency_map.py`)
 
-Gradient-based saliency maps were computed using **Captum's `Saliency`** method:
+Gradient-based saliency maps were computed using Captum's `Saliency` method.
 
-1. Load the ECG tensor for a given record from the test dataset.
-2. Forward pass through `best_model` with `requires_grad=True` on the input.
-3. Compute the gradient of the output logit with respect to the input signal.
-4. Take the absolute value per time point, normalise to [0, 1] per lead.
-5. Overlay saliency as a colour scatter on the waveform (red = high influence).
+For each selected ECG:
 
-Each plot title reports the **true label** and **predicted probability** (sigmoid of logit).
+1. The ECG tensor is loaded from the test dataset.
+2. A forward pass is performed through the trained model.
+3. The gradient of the model output logit with respect to the input ECG is calculated.
+4. Absolute gradient values are taken for the selected lead.
+5. Saliency values are normalised to `[0, 1]`.
+6. The resulting values are overlaid on the ECG waveform as a colour-coded scatter plot.
 
-**Lead index reference:**
+Each plot reports the true label and the sigmoid-transformed STTC probability.
+
+### Lead Index Reference
 
 | Index | Lead | Index | Lead |
-|-------|------|-------|------|
+|---:|---|---:|---|
 | 0 | I | 6 | V1 |
 | 1 | II | 7 | V2 |
 | 2 | III | 8 | V3 |
@@ -229,25 +266,27 @@ Each plot title reports the **true label** and **predicted probability** (sigmoi
 | 4 | aVL | 10 | V5 |
 | 5 | aVF | 11 | V6 |
 
-### Cases selected for interpretability
+### Cases Selected for Interpretability
 
-The most extreme errors from the test set were chosen:
+Two extreme test-set errors were selected:
 
-| Case | ECG ID | True label | Pred. prob | Error type |
-|------|--------|------------|------------|------------|
-| **FP** | **1158** | 0 (normal) | 0.981 | Highest-confidence false positive |
-| **FN** | **11132** | 1 (abnormal) | 0.004 | Lowest-confidence false negative |
+| Case | ECG ID | True label | STTC probability | Error description |
+|---|---:|---|---:|---|
+| **FP** | **1158** | 0 (normal) | 0.981 | Highest-STTC-probability false positive |
+| **FN** | **11132** | 1 (STTC) | 0.004 | Lowest-STTC-probability false negative |
 
-Raw 12-lead ECG plots were generated first (`plot_ecg_by_id`), followed by saliency overlays on Lead II and all chest leads (V1–V6).
+Raw 12-lead ECG plots were generated first using `plot_ecg_by_id`, followed by saliency overlays on Lead II and the precordial leads V1–V6.
 
-### Generated saliency figures
+### Generated Saliency Figures
 
-All plots saved under `results/plots/saliency/`:
+All plots are saved under:
 
-**False positive — ECG 1158**
+`results/plots/saliency/`
+
+#### False Positive — ECG 1158
 
 | File | Lead |
-|------|------|
+|---|---|
 | `saliency_fp_1158_leadII.png` | II |
 | `saliency_fp_1158_leadV1.png` | V1 |
 | `saliency_fp_1158_leadV2.png` | V2 |
@@ -256,10 +295,10 @@ All plots saved under `results/plots/saliency/`:
 | `saliency_fp_1158_leadV5.png` | V5 |
 | `saliency_fp_1158_leadV6.png` | V6 |
 
-**False negative — ECG 11132**
+#### False Negative — ECG 11132
 
 | File | Lead |
-|------|------|
+|---|---|
 | `saliency_fn_11132_leadII.png` | II |
 | `saliency_fn_11132_leadV1.png` | V1 |
 | `saliency_fn_11132_leadV2.png` | V2 |
@@ -268,68 +307,99 @@ All plots saved under `results/plots/saliency/`:
 | `saliency_fn_11132_leadV5.png` | V5 |
 | `saliency_fn_11132_leadV6.png` | V6 |
 
-### How to reproduce
+### How to Reproduce
 
-Run `notebooks/data_pipeline.ipynb` through Section 9 after completing test evaluation (Section 8). Required variables: `best_model`, `test_dataset`, `test_df`, `device`, `fp_id`, `fn_id`.
+Run `notebooks/data_pipeline.ipynb` through Section 9 after completing test evaluation in Section 8.
+
+Required variables:
+
+- `best_model`
+- `test_dataset`
+- `test_df`
+- `device`
+- `fp_id`
+- `fn_id`
+
+Example:
 
 ```python
-from src.saliency_map import plot_saliency_for_lead, plot_saliency_for_leads, CHEST_LEAD_IDXS
+from src.saliency_map import (
+    plot_saliency_for_lead,
+    plot_saliency_for_leads,
+    CHEST_LEAD_IDXS,
+)
 
 plot_saliency_for_lead(
-    model=best_model, dataset=test_dataset, df=test_df,
-    ecg_id=fp_id, device=device, lead_idx=1,
-    save_path="results/plots/saliency/saliency_fp_{}_leadII.png".format(fp_id),
+    model=best_model,
+    dataset=test_dataset,
+    df=test_df,
+    ecg_id=fp_id,
+    device=device,
+    lead_idx=1,
+    save_path=f"results/plots/saliency/saliency_fp_{fp_id}_leadII.png",
 )
 ```
 
-### Interpretation notes
+### Interpretation Notes
 
-- **ECG 1158 (FP):** The model assigns 98.1% abnormal probability to a normal-labelled record. Saliency maps show which QRS/ST segments the CNN treats as pathological — useful for identifying spurious feature associations or subtle morphology that resembles pathology.
-- **ECG 11132 (FN):** The model assigns 0.4% abnormal probability to a truly abnormal record. Saliency maps reveal whether the model ignores clinically relevant regions or whether the abnormality is expressed in leads the CNN under-weights.
-- Chest leads (V1–V6) are emphasised because many cardiac pathologies localise to precordial leads; Lead II is included as the standard rhythm strip.
+- **ECG 1158 (FP):** The model assigns 98.1% STTC probability to a normal-labelled record. Saliency maps highlight waveform regions with high local influence on the prediction and can help identify possible spurious feature associations or morphology resembling ST/T abnormalities.
 
-Saliency maps show **where** the model looks, not **why** in clinical terms. They are exploratory tools for error analysis, not standalone clinical explanations.
+- **ECG 11132 (FN):** The model assigns 0.4% STTC probability to an STTC-positive record. Saliency maps can be used to examine whether regions associated with the STTC label receive relatively little model sensitivity or whether relevant morphology is concentrated in leads that contribute less strongly to the prediction.
+
+- Lead II and precordial leads V1–V6 were examined to provide a broader view of model sensitivity across rhythm and chest-lead morphology.
+
+Saliency maps measure local input sensitivity to the model output. They do **not** establish why a waveform is clinically abnormal and should not be interpreted as standalone clinical explanations.
 
 ---
 
-## 9. Generalisation assessment
+## 9. Generalisation Assessment
 
-| Observation | Assessment |
-|-------------|------------|
-| AUROC drop (val → test) | 0.005 — excellent |
-| AUPRC drop | 0.002 — excellent |
-| Accuracy drop | 0.68 pp — minimal |
-| F1 drop | 0.012 — acceptable |
+| Observation | Validation → Test change |
+|---|---:|
+| AUROC | −0.005 |
+| AUPRC | −0.002 |
+| Accuracy | −0.68 percentage points |
+| F1 | −0.012 |
 | Patient leakage | None detected |
 
-The model generalises well from validation fold 9 to test fold 10 with no evidence of significant overfitting.
+Held-out test performance closely matched validation performance, with only small decreases across the main metrics.
+
+This provides evidence that performance was maintained on the held-out PTB-XL fold, although external validation is still required before making claims about generalisation to other datasets or clinical populations.
 
 ---
 
 ## 10. Conclusions
 
-1. **Strong discrimination:** AUROC 0.974 and AUPRC 0.964 on 1,433 held-out test ECGs.
-2. **Clinically usable operating point:** At threshold 0.377, sensitivity 90.8% and precision 87.8%.
-3. **Stable generalisation:** Test performance closely matches validation across all metrics.
-4. **Interpretable error analysis:** 114 misclassified records identified; saliency maps generated for the most extreme FP and FN cases.
-5. **Reproducible pipeline:** End-to-end workflow from preprocessing through evaluation and interpretability in `data_pipeline.ipynb`.
+1. **Strong STTC discrimination:** The model achieved AUROC 0.974 and AUPRC 0.964 when distinguishing pure normal ECGs from STTC-positive ECGs on 1,433 held-out records.
+
+2. **Sensitivity-focused operating point:** At the validation-selected threshold of 0.377, sensitivity for STTC was 90.8% with precision of 87.8%.
+
+3. **Stable held-out performance:** Test performance remained close to validation performance across the main metrics.
+
+4. **Error analysis and interpretability:** 114 misclassified records were identified, and gradient-based saliency maps were generated for extreme false-positive and false-negative cases.
+
+5. **End-to-end workflow:** The project integrates PTB-XL label extraction, ECG preprocessing, CNN training and evaluation, gradient-based interpretability, FastAPI inference, and a deployed browser interface.
 
 ### Limitations
 
-- Threshold tuned on validation fold 9; test F1 is marginally higher at 0.5.
-- Evaluation limited to PTB-XL fold 10; external validation on other cohorts is needed before clinical use.
-- Binary normal vs abnormal collapses diverse pathologies into one class.
-- Saliency maps reflect gradient attribution for this CNN architecture only; they do not constitute clinical diagnosis.
+- The classification threshold was selected using validation fold 9; test F1 happened to be marginally higher at a threshold of 0.5.
+- Evaluation is limited to PTB-XL fold 10; external validation on independent cohorts is required before assessing generalisability beyond PTB-XL.
+- The binary task distinguishes pure normal ECGs from ECGs containing the broad STTC diagnostic superclass.
+- ECGs containing other diagnostic superclasses without STTC are excluded from the classification task.
+- STTC-positive ECGs may also contain additional diagnostic superclasses.
+- STTC is a broad diagnostic superclass and may contain heterogeneous ST/T morphologies.
+- Gradient-based saliency measures model input sensitivity and does not provide a causal or clinical explanation for predictions.
+- The model has not been clinically validated and is not intended for diagnostic use.
 
 ---
 
-## 11. Artifact index
+## 11. Artifact Index
 
 | Artifact | Path |
-|----------|------|
+|---|---|
 | This report | `results/TEST_SET_EVALUATION.md` |
-| Test metrics (CSV) | `results/metrics/test_metrics.csv` |
-| Val vs test comparison | `results/metrics/val_test_comparison.csv` |
+| Test metrics | `results/metrics/test_metrics.csv` |
+| Validation vs test comparison | `results/metrics/val_test_comparison.csv` |
 | Training history | `results/metrics/training_history.csv` |
 | Best model weights | `results/models/best_simple_cnn.pt` |
 | Test ROC curve | `results/plots/test_roc_curve.png` |
