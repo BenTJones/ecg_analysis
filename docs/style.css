@@ -1,0 +1,169 @@
+* {
+    box-sizing: border-box;
+}
+
+body{
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f7f9;
+    color: #1f2933;
+
+}
+
+.container {
+    width: 90%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 60px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.header h1 {
+    margin-bottom: 10px;
+
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #102a43;
+}
+
+.subtitle {
+    margin: 0;
+
+    font-size: 1.05rem;
+    line-height: 1.6;
+
+    color: #627d98;
+}
+
+.card{
+    background: white;
+
+    border-radius: 14px;
+    padding: 30px;
+
+    margin-bottom: 24px;
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+
+    color: #102a43;
+}
+.description {
+    margin-top: 0;
+    margin-bottom: 25px;
+
+    color: #627d98;
+    line-height: 1.5;
+}
+
+.file-upload {
+    margin-bottom: 22px;
+}
+.file-upload label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-weight: 600;
+    color: #334e68;
+}
+.file-upload input[type="file"] {
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid #bcccdc;
+    border-radius: 8px;
+
+    background: #f8fafc;
+}
+
+button {
+    width: 100%;
+
+    border: none;
+    border-radius: 8px;
+
+    padding: 14px 20px;
+
+    background: #0b6e75;
+    color: white;
+
+    font-size: 1rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+#statusMessage {
+    margin-top: 15px;
+    margin-bottom: 0;
+
+    text-align: center;
+
+    color: #627d98;
+}
+
+.result-card {
+    text-align: center;
+}
+
+
+.result {
+    margin: 25px 0;
+}
+
+
+.result-label {
+    margin-bottom: 6px;
+
+    font-size: 0.9rem;
+    font-weight: 600;
+
+    text-transform: uppercase;
+    letter-spacing: 1px;
+
+    color: #829ab1;
+}
+
+
+.prediction {
+    margin: 0;
+
+    font-size: 2rem;
+    font-weight: 700;
+
+    color: #0b6e75;
+}
+
+
+.probability {
+    margin: 0;
+
+    font-size: 1.6rem;
+    font-weight: 600;
+
+    color: #334e68;
+}
+
+.footer {
+    margin-top: 30px;
+
+    text-align: center;
+
+    font-size: 0.85rem;
+    line-height: 1.5;
+
+    color: #829ab1;
+}
+
+

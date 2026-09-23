@@ -12,7 +12,7 @@ with open(record_dir / "00001_hr.hea", "rb") as hea_file, open(
         ("files", ("00001_hr.hea", hea_file)),
         ("files", ("00001_hr.dat", dat_file)),
     ]
-    response = requests.post("http://localhost:8000/predict", files=files, timeout=30)
+    response = requests.post("https://ecg-analysis-ws6t.onrender.com/predict", files=files, timeout=30)
 
 response.raise_for_status()
 print(response.json())

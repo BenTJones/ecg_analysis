@@ -4,10 +4,16 @@ from typing import List
 
 import wfdb
 from fastapi import FastAPI, File, HTTPException, UploadFile
-
+from fastapi.middleware.cors import CORSMiddleware 
 from api.predict import predict
 
 app = FastAPI(title="ECG Risk Classifier")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET","POST"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")

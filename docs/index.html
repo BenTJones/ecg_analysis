@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>ECG Risk Stratification</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+
+<body>
+
+    <main class="container">
+
+        <header class="header">
+            <h1>ECG Risk Stratification</h1>
+
+            <p class="subtitle">
+                Deep-learning classification of ST-T changes
+                from 12-lead ECG recordings
+            </p>
+        </header>
+
+
+        <!-- ECG upload section -->
+        <section class="card">
+
+            <h2>Analyse an ECG</h2>
+
+            <p class="description">
+                Upload the WFDB header and signal files for an ECG recording.
+            </p>
+
+
+            <div class="file-upload">
+
+                <label for="heaFile">
+                    Header file (.hea)
+                </label>
+
+                <input
+                    type="file"
+                    id="heaFile"
+                    accept=".hea"
+                >
+
+            </div>
+
+
+            <div class="file-upload">
+
+                <label for="datFile">
+                    Signal file (.dat)
+                </label>
+
+                <input
+                    type="file"
+                    id="datFile"
+                    accept=".dat"
+                >
+
+            </div>
+
+
+            <button id="analyseButton">
+                Analyse ECG
+            </button>
+
+
+            <p id="statusMessage"></p>
+
+        </section>
+
+        <section
+            class="card result-card"
+            id="resultCard"
+            hidden
+        >
+
+            <h2>Prediction</h2>
+
+            <div class="result">
+
+                <p class="result-label">
+                    Classification
+                </p>
+
+                <p
+                    class="prediction"
+                    id="prediction"
+                >
+                    -
+                </p>
+
+            </div>
+
+
+            <div class="result">
+
+                <p class="result-label">
+                    STTC Probability
+                </p>
+
+                <p
+                    class="probability"
+                    id="probability"
+                >
+                    -
+                </p>
+
+            </div>
+
+        </section>
+
+        <footer class="footer">
+
+            <p>
+                Research and testing prototype only.
+                Not intended for clinical diagnosis or decision-making.
+            </p>
+
+        </footer>
+
+    </main>
+
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
