@@ -6,8 +6,7 @@ The project combines ECG signal preprocessing, a PyTorch 1D convolutional neural
 
 ## Demo
 
-ECG ST/T Change Classification web application
-ECG ST/T Change Classification web application
+![ECG ST/T Change Classification web application](./results/website/website_ss.png)
 
 ## Live Project
 
@@ -29,6 +28,13 @@ ECG ST/T Change Classification web application
 | Sensitivity | 90.79% |
 | Specificity | 92.76% |
 
+### ROC Curve
+
+![Held-out test ROC curve](results/plots/test_roc_curve.png)
+
+### Precision–Recall Curve
+
+![Held-out test precision-recall curve](results/plots/test_pr_curve.png)
 
 The final model was evaluated on **1,433 held-out PTB-XL ECGs from fold 10**, with zero patient overlap between the training, validation, and test sets.
 
