@@ -2,7 +2,7 @@
 
 **Project:** ecg-risk-stratification  
 **Model:** `simpleECGNN` (1D CNN)  
-**Dataset:** PTB-XL binary classification (normal vs abnormal)  
+**Dataset:** PTB-XL binary classification of pure normal ECGs vs ECGs containing the STTC diagnostic superclass  
 **Report date:** September 2026  
 **Pipeline:** `notebooks/data_pipeline.ipynb`
 

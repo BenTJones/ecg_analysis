@@ -57,7 +57,7 @@ def add_binary_col(df):
     return df
 
 def plot_ecg(signal,meta,title = None):
-    '''Nees ECG data already to be read and seperated into signal and metadata to allow for correct plotting
+    '''Needs ECG data already to be read and seperated into signal and metadata to allow for correct plotting
     Shows each lead one by one in a compisite plot'''
     fs = meta['fs']
     lead_name = meta['sig_name']
