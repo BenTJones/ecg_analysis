@@ -1,5 +1,5 @@
 const API_URL =
-    "https://https://ecg-analysis-ws6t.onrender.com/predict";
+    "https://ecg-analysis-ws6t.onrender.com/predict";
 
 
 const heaFileInput =
