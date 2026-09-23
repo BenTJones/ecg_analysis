@@ -170,6 +170,20 @@ On the test set, the 0.5 threshold produced marginally higher accuracy and F1 an
 
 The final threshold remains `0.3773` because it was selected using validation data rather than optimised retrospectively on the held-out test set. It also provides a more sensitivity-focused operating point.
 
+### ROC and Precision–Recall Curves
+
+#### ROC Curve
+
+![ROC curve for the held-out PTB-XL test set](plots/test_roc_curve.png)
+
+The ROC curve summarises discrimination between pure normal and STTC-positive ECGs across classification thresholds. The held-out test AUROC was 0.9742.
+
+#### Precision–Recall Curve
+
+![Precision-recall curve for the held-out PTB-XL test set](plots/test_pr_curve.png)
+
+The precision–recall curve summarises the trade-off between precision and recall across decision thresholds. The held-out test AUPRC was 0.9635.
+
 ---
 
 ## 6. Predicted Probability Distribution
@@ -306,6 +320,20 @@ All plots are saved under:
 | `saliency_fn_11132_leadV4.png` | V4 |
 | `saliency_fn_11132_leadV5.png` | V5 |
 | `saliency_fn_11132_leadV6.png` | V6 |
+
+### Example Saliency Results
+
+#### False Positive — ECG 1158
+
+![Lead II saliency map for false-positive ECG 1158](plots/saliency/saliency_fp_1158_leadII.png)
+
+ECG 1158 is a normal-labelled record assigned an STTC probability of 0.981. The saliency overlay highlights waveform regions with relatively high local influence on the model output.
+
+#### False Negative — ECG 11132
+
+![Lead II saliency map for false-negative ECG 11132](plots/saliency/saliency_fn_11132_leadII.png)
+
+ECG 11132 is an STTC-positive record assigned an STTC probability of 0.004. The saliency overlay provides a view of input regions influencing this incorrect normal prediction.
 
 ### How to Reproduce
 

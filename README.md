@@ -4,26 +4,35 @@ An end-to-end deep-learning pipeline for identifying ST/T changes (STTC) from 12
 
 The project combines ECG signal preprocessing, a PyTorch 1D convolutional neural network, held-out test evaluation, gradient-based interpretability, a deployed FastAPI inference service, and a browser-based ECG upload interface.
 
+## Demo
+
+ECG ST/T Change Classification web application
+ECG ST/T Change Classification web application
+
 ## Live Project
 
 - **Web App:** [Try the ECG classifier](https://bentjones.github.io/ecg_analysis/)
 - **API Documentation:** [FastAPI Swagger Docs](https://ecg-analysis-ws6t.onrender.com/docs)
 - **API Health Check:** [Render API](https://ecg-analysis-ws6t.onrender.com/health)
 
+
+
 ## Test Performance
 
-| Metric | Result |
-|---|---:|
-| Accuracy | 92.04% |
-| AUROC | 0.974 |
-| AUPRC | 0.964 |
-| F1 | 0.893 |
+
+| Metric      | Result |
+| ----------- | ------ |
+| Accuracy    | 92.04% |
+| AUROC       | 0.974  |
+| AUPRC       | 0.964  |
+| F1          | 0.893  |
 | Sensitivity | 90.79% |
 | Specificity | 92.76% |
 
+
 The final model was evaluated on **1,433 held-out PTB-XL ECGs from fold 10**, with zero patient overlap between the training, validation, and test sets.
 
-For the full test-set analysis, including threshold comparison, error analysis, and saliency results, see [`results/TEST_SET_EVALUATION.md`](results/TEST_SET_EVALUATION.md).
+For the full test-set analysis, including threshold comparison, error analysis, and saliency results, see `[results/TEST_SET_EVALUATION.md](results/TEST_SET_EVALUATION.md)`.
 
 ## Classification Target
 
@@ -64,6 +73,8 @@ FastAPI inference service
         ↓
 Browser-based web interface
 ```
+
+
 
 ## Signal Preprocessing
 
@@ -123,11 +134,13 @@ The project uses PyTorch `Dataset` classes for both dynamic preprocessing and lo
 
 For the final experiment:
 
-| Split | PTB-XL Folds |
-|---|---|
-| Training | 1–8 |
-| Validation | 9 |
-| Test | 10 |
+
+| Split      | PTB-XL Folds |
+| ---------- | ------------ |
+| Training   | 1–8          |
+| Validation | 9            |
+| Test       | 10           |
+
 
 The training pipeline:
 
@@ -139,16 +152,24 @@ The training pipeline:
 
 The final training configuration used:
 
-| Parameter | Value |
-|---|---|
-| Loss | `BCEWithLogitsLoss` |
-| Positive-class weight | `1.73` |
-| Optimiser | Adam |
-| Learning rate | `1e-3` |
-| Weight decay | `1e-5` |
-| Batch size | `64` |
-| Best epoch | `23` |
-| Best validation AUROC | `0.9792` |
+
+| Parameter             | Value               |
+| --------------------- | ------------------- |
+| Loss                  | `BCEWithLogitsLoss` |
+| Positive-class weight | `1.73`              |
+| Optimiser             | Adam                |
+| Learning rate         | `1e-3`              |
+| Weight decay          | `1e-5`              |
+| Batch size            | `64`                |
+| Best epoch            | `23`                |
+| Best validation AUROC | `0.9792`            |
+
+
+
+
+### ROC Curve
+
+Held-out test ROC curve
 
 ### Decision Threshold
 
@@ -162,14 +183,18 @@ Maximising validation F1 produced a threshold of:
 
 At this operating point, the held-out test set achieved:
 
-| Metric | Value |
-|---|---:|
+
+| Metric      | Value  |
+| ----------- | ------ |
 | Sensitivity | 90.79% |
 | Specificity | 92.76% |
-| Precision | 87.76% |
-| F1 | 0.8925 |
-| AUROC | 0.9742 |
-| AUPRC | 0.9635 |
+| Precision   | 87.76% |
+| F1          | 0.8925 |
+| AUROC       | 0.9742 |
+| AUPRC       | 0.9635 |
+
+
+
 
 ## Interpretability
 
@@ -187,6 +212,12 @@ Saliency analysis was performed on extreme test-set errors, including:
 - precordial leads V1–V6
 
 Saliency maps are used as exploratory error-analysis tools and should not be interpreted as causal or clinical explanations of model decisions.
+
+### Example Saliency Map
+
+![Saliency map for false-positive ECG 1158, Lead II](results/plots/saliency/saliency_fp_1158_leadII.png)
+
+Example gradient-based saliency map for ECG 1158, a normal-labelled ECG assigned a high STTC probability by the model.
 
 ## Web Application and API
 
@@ -256,7 +287,11 @@ ecg_analysis/
 └── requirements.txt
 ```
 
+
+
 ## Implementation Details
+
+
 
 ### Data Extraction
 
@@ -301,6 +336,8 @@ Model checkpoints are selected according to validation AUROC.
 - validation F1
 - individual 12-lead ECG recordings
 
+
+
 ## Limitations
 
 - Evaluation is currently limited to PTB-XL; external validation on an independent ECG cohort would be required before assessing generalisability beyond this dataset.
@@ -310,9 +347,10 @@ Model checkpoints are selected according to validation AUROC.
 - Gradient-based saliency measures local input sensitivity and does not provide a causal or clinical explanation for a prediction.
 - The deployed application is intended as a research and engineering demonstration rather than a clinical diagnostic system.
 
+
+
 ## Disclaimer
 
 This project is a research and educational prototype.
 
 It has not been clinically validated and is **not intended for diagnosis, treatment decisions, or other clinical use**.
-
