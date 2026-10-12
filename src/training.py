@@ -21,7 +21,7 @@ def train_an_epoch(model,loader,optimizer,criterion,device):
         #    print(
         #        f"Batch {idx}/{len(loader)} - Loss: {loss.item():.4f}",
         #        flush=True
-        #    ) USEFUL FOR DEBUGGING BUT CLOGS OUTPUT
+        #    ) USEFUL FOR DEBUGGING BUT WAS CLOGGING OUTPUT
     
     epoch_loss = running_loss / len(loader.dataset)
     return epoch_loss
@@ -102,6 +102,7 @@ def train(
             best_val_auroc = val_metrics['auroc']
             torch.save(model.state_dict(), best_model_path)
             print(f"New best model saved with AUROC: {best_val_auroc:.4f}")
+            patience_counter = 0
             
         else:
             patience_counter += 1
